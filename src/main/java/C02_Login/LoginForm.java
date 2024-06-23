@@ -76,4 +76,9 @@ public class LoginForm {
             return false;
         }
     }
+    public void login (String email, String password) {
+        inputEmail(email);
+        inputPassword(password);
+        clickOnSignInBtn();
+    }
 }

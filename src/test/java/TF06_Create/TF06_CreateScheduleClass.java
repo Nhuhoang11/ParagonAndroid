@@ -17,7 +17,9 @@ import utils.AccEx;
 import utils.LaunchParagon;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
 import java.util.Random;
 
@@ -29,89 +31,105 @@ public class TF06_CreateScheduleClass {
     private SwipeBack swipeBack;
     private ScheduleClassForm scheduleClassForm;
     private ScrollUp90 scrollUp90;
-    By createSel = MobileBy.AccessibilityId("Create");
-    By scheduleClassSel = MobileBy.AccessibilityId("Schedule Class");
-    By doneBtnSel = MobileBy.AccessibilityId("Done");
     String title = "Test livestream Go Live";
     String desc = "Desciptipn of Go Live";
+    // Get random minute (duration)
     Random random = new Random();
-    int randomMin = 0 + random.nextInt(100);
-    String randomMinString = Integer.toString(randomMin);
+    int randomDuration = random.nextInt(100);
+    String duration = Integer.toString(randomDuration);
     // Get current Date and Time
     LocalDate localDate = LocalDate.now();
-    int tomorrow = localDate.getDayOfMonth() + 1;
-    int month = localDate.getMonthValue() + 2;
     int year = localDate.getYear();
-    String validDate = String.valueOf(tomorrow);
+    int month = (localDate.getMonthValue() + 1) + random.nextInt(12 - localDate.getMonthValue()); // Random từ tháng kế tiếp đến tháng 12
+    int daysInMonth = YearMonth.of(year, month).lengthOfMonth(); // Get days of random month
+    String validDate = String.valueOf(1 + random.nextInt(daysInMonth));
     String validMonthYear = "tháng " + month + " " + year;
-    LocalTime localTime = LocalTime.now();
-    DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm");
-    String formattedTime = localTime.format(timeFormatter);
-    String validHour = formattedTime.substring(0, 3);
-    String validMinutes = formattedTime.substring(3);
+    // Random hour and minutes
+    String validHour = Integer.toString(random.nextInt(24));
+    String validMinutes = Integer.toString(random.nextInt(60));
     // Get category random
     String[] categoryList = {"Yoga", "Cardio", "Boxing", "Stretching", "Trending", "Music"};
-    int categoryIndex = 0 + random.nextInt(categoryList.length);
-    String category = categoryList[categoryIndex].toString();
+    int categoryIndex = random.nextInt(categoryList.length);
+    String category = categoryList[categoryIndex];
 
     @BeforeClass
     public void setup() {
         appiumDriver = LaunchParagon.getAppiumDriver();
         wait = new WebDriverWait(appiumDriver, 10);
-        try {
-            Thread.sleep(4000);
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
-        }
         swipeBack = new SwipeBack(appiumDriver);
-        scheduleClassForm = new ScheduleClassForm(appiumDriver);
         scrollUp90 = new ScrollUp90(appiumDriver);
         loginForm = new LoginForm(appiumDriver);
-        loginForm.inputEmail(AccEx.validEmail1);
-        loginForm.inputPassword(AccEx.validPassword);
-        loginForm.clickOnSignInBtn();
-        wait.until(ExpectedConditions.visibilityOfElementLocated(createSel));
-        appiumDriver.findElement(createSel).click();
-        wait.until(ExpectedConditions.visibilityOfElementLocated(scheduleClassSel));
-        appiumDriver.findElement(scheduleClassSel).click();
+        loginForm.login(AccEx.validEmail1, AccEx.validPassword);
+        scheduleClassForm = new ScheduleClassForm(appiumDriver);
+        scheduleClassForm.createScheduleClassBtn();
     }
 
     @Test
     public void TC001_CreateGoLive_LeftFieldEmpty() {
         // Tap on Create button
-
+        scheduleClassForm.clickOnDoneBtn();
+        if (scheduleClassForm.isCreateScheduleFail()) {
+            System.out.println("[PASS] Cannot create livestream if left all fields empty");
+        } else {
+            System.out.println("FAIL: User can successfully create livestream even if left all fields empty");
+        }
     }
     @Test
     public void TC002_CreateGoLive_LeftTitleEmpty() {
         // Left Title field empty
-        scheduleClassForm.inputDesc(desc);
-        scheduleClassForm.inputCategory(category);
-        scheduleClassForm.inputDuration(randomMinString);
-        scheduleClassForm.uploadThumbnail();
-        // Tap on Create button
-        wait.until(ExpectedConditions.visibilityOfElementLocated(doneBtnSel));
-        appiumDriver.findElement(doneBtnSel).click();
-
+        scheduleClassForm
+                .inputDesc(desc)
+                .inputCategory(category)
+                .inputDuration(duration)
+                .inputDate(validDate, validMonthYear)
+                .isDateSelectedDisplayCorrect(validDate, validMonthYear)
+                .inputTime(validHour, validMinutes)
+                .isTimeSelectedDisplayCorrect(validHour, validMinutes)
+                .uploadThumbnail()
+                .clickOnDoneBtn()
+                .clear();
+        // Verify create failed
+        if (scheduleClassForm.isCreateScheduleFail()) {
+            System.out.println("[PASS] Cannot create livestream without input Title");
+        } else {
+            System.out.println("FAIL: User can successfully create livestream without input Title");
+        }
     }
     @Test
     public void TC003_CreateGoLive_LeftDescEmpty() {
-        scheduleClassForm.clear();
-        // Input
-        scheduleClassForm.inputDesc(title);
-        // Tap on Create button
-        wait.until(ExpectedConditions.visibilityOfElementLocated(doneBtnSel));
-        appiumDriver.findElement(doneBtnSel).click();
-
+        // Left Description field empty
+        scheduleClassForm
+                .inputTitle(title)
+                .inputCategory(category)
+                .inputDuration(duration)
+                .inputDate(validDate, validMonthYear)
+                .isDateSelectedDisplayCorrect(validDate, validMonthYear)
+                .inputTime(validHour, validMinutes)
+                .isTimeSelectedDisplayCorrect(validHour, validMinutes)
+                .uploadThumbnail()
+                .clickOnDoneBtn()
+                .clear();
+        // Verify create failed
+        if (scheduleClassForm.isCreateScheduleFail()) {
+            System.out.println("[PASS] Cannot create livestream without input Title");
+        } else {
+            System.out.println("FAIL: User can successfully create livestream without input Title");
+        }
     }
     @Test
     public void TC004_CreateGoLive_LeftDurationEmpty() {
-        scheduleClassForm.clear()
+        scheduleClassForm
                 .inputTitle(title)
                 .inputDesc(desc)
                 .inputCategory(category)
                 .inputDate(validDate, validMonthYear)
+                .isDateSelectedDisplayCorrect(validDate, validMonthYear)
                 .inputTime(validHour, validMinutes)
-                .clickOnDoneBtn();
+                .isTimeSelectedDisplayCorrect(validHour, validMinutes)
+                .uploadThumbnail()
+                .clickOnDoneBtn()
+                .clear();
+        // Verify create failed
         if (scheduleClassForm.isCreateScheduleFail()) {
             System.out.println("[PASS] Cannot create livestream without input Duration");
         } else {
@@ -119,10 +137,51 @@ public class TF06_CreateScheduleClass {
         }
     }
     @Test
-    public void TC() {
-        scheduleClassForm.inputDate(validDate, validMonthYear);
-        scheduleClassForm.isDateSelectedDisplayCorrect(validDate, validMonthYear);
-        scheduleClassForm.inputTime(validHour, validMinutes);
-        scheduleClassForm.isTimeSelectedDisplayCorrect(validHour, validMinutes);
+    public void TC005_CreateGoLive_LeftThumnailEmpty() {
+        scheduleClassForm
+                .inputTitle(title)
+                .inputDesc(desc)
+                .inputCategory(category)
+                .inputDuration(duration)
+                .inputDate(validDate, validMonthYear)
+                .isDateSelectedDisplayCorrect(validDate, validMonthYear)
+                .inputTime(validHour, validMinutes)
+                .isTimeSelectedDisplayCorrect(validHour, validMinutes)
+                .clickOnDoneBtn();
+        // Verify create failed
+        if (scheduleClassForm.isCreateScheduleFail()) {
+            System.out.println("[PASS] Cannot create livestream without upload thumbnail");
+        } else {
+            System.out.println("FAIL: User can successfully create livestream without upload thumbnail");
+        }
+        scheduleClassForm
+                .clickOnCancelBtn()
+                .createScheduleClassBtn();
+    }
+    @Test
+    public void TC006_inputInvalidDateTime() {
+        // Get current Date and Time
+        LocalDate localDate = LocalDate.now();
+        String today = String.valueOf(localDate.getDayOfMonth());
+        String monthYear = "tháng " + localDate.getMonthValue() + " " + localDate.getYear();
+        // Get Time
+        LocalDateTime localDateTime = LocalDateTime.now();
+        DateTimeFormatter formattedTime = DateTimeFormatter.ofPattern("HH:mm");
+        String currentTime = localDateTime.format(formattedTime);
+        int hour = Integer.parseInt(currentTime.substring(0,2));
+        int min = Integer.parseInt(currentTime.substring(3));
+        System.out.println("Now it is: " + hour + ":" + min);
+        String invalidHour = Integer.toString(random.nextInt(hour + 1));
+        String invalidMinute = Integer.toString(random.nextInt(min));
+        System.out.println("Input time: " + invalidHour + ":" + invalidMinute);
+
+        scheduleClassForm
+                .inputTitle(title)
+                .inputDesc(desc)
+                .inputCategory(category)
+                .inputDuration(duration)
+//                .inputDate(today, monthYear) // Không cần step này vì app đã tự động input giá trị là today
+                .inputTime(invalidHour, invalidMinute)
+                .isInputDateTimeFail();
     }
 }
